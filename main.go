@@ -155,7 +155,7 @@ func main() {
 				ProxyHeader:       c.String("proxy-header"),
 				ReduceMemoryUsage: c.Bool("reduce-memory-usage"),
 				JSONEncoder:       jsoniter.Marshal,
-				Network: "tcp",
+				Network:           "tcp",
 				ErrorHandler: func(c *fiber.Ctx, err error) error {
 					code := fiber.StatusInternalServerError
 					if e, ok := err.(*fiber.Error); ok {
@@ -174,8 +174,11 @@ func main() {
 			routerSetup(fiberRouter)
 
 			if serverless := c.Bool("serverless"); serverless {
-				// use system environment variable.
-				db = database.NewEnvBase()
+				if dsn := c.String("dsn"); dsn != "" {
+					db = database.NewMySQL(dsn)
+				} else {
+					db = database.NewEnvBase()
+				}
 			} else if dsn := c.String("dsn"); dsn != "" {
 				db = database.NewMySQL(dsn)
 			} else {

@@ -3,33 +3,50 @@ package database
 import (
 	"fmt"
 	"os"
+
+	"github.com/mritd/logger"
 )
 
+// EnvBase represents a database that uses environment variables for storage
 type EnvBase struct {
+	key         string
+	deviceToken string
 }
 
+// NewEnvBase creates a new EnvBase instance and validates the required environment variables
 func NewEnvBase() Database {
-	return &EnvBase{}
+	key := os.Getenv("BARK_KEY")
+	deviceToken := os.Getenv("BARK_DEVICE_TOKEN")
+
+	if key == "" || deviceToken == "" {
+		logger.Fatalf("BARK_KEY and BARK_DEVICE_TOKEN must be set in serverless mode.")
+	}
+
+	return &EnvBase{key: key, deviceToken: deviceToken}
 }
 
+// CountAll returns the count of all entries in the database
 func (d *EnvBase) CountAll() (int, error) {
 	return 1, nil
 }
 
+// DeviceTokenByKey returns the device token associated with the given key
 func (d *EnvBase) DeviceTokenByKey(key string) (string, error) {
-	if key == os.Getenv("BARK_KEY") {
-		return os.Getenv("BARK_DEVICE_TOKEN"), nil
+	if key == d.key {
+		return d.deviceToken, nil
 	}
-	return "nil", fmt.Errorf("key not found")
+	return "", fmt.Errorf("key not found")
 }
 
+// SaveDeviceTokenByKey saves the device token associated with the given key
 func (d *EnvBase) SaveDeviceTokenByKey(key, token string) (string, error) {
-	if token == os.Getenv("BARK_DEVICE_TOKEN") {
-		return os.Getenv("BARK_KEY"), nil
+	if token == d.deviceToken {
+		return d.key, nil
 	}
-	return "nil", fmt.Errorf("device token is invalid")
+	return "", fmt.Errorf("device token is invalid")
 }
 
+// Close closes the database connection (no-op for EnvBase)
 func (d *EnvBase) Close() error {
 	return nil
 }
